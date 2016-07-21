@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+		<meta name="description" content="">
+		<meta name="author" content="">
+		<!--<link rel="icon" href="../../favicon.ico">-->
+
+		<title>icon font search</title>
+
+		<!-- Bootstrap core CSS -->
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="./css/bootstrap.min.css">
+		<!-- Optional theme -->
+		<link rel="stylesheet" href="./css/bootstrap-theme.min.css">
+
+		<!-- font icon -->
+		<!-- Font Awesome -->
+		<link rel="stylesheet" href="./css/font-awesome.min.css">
+		<style>
+			body {
+				padding-top: 50px;
+			}
+			.starter-template {
+				padding: 40px 15px;
+			}
+			.IFS-BUTTON {
+				margin-bottom: 0.25em;
+			}
+			.IFS-TAG {
+				margin-right: 0.5em;
+			}
+			.IFS-DELETE:hover {
+				cursor: pointer;
+			}
+		</style>
+
+		<!-- IE10 viewport hack for Surface/desktop Windows 8 bug 
+		<link href="../../assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet">-->
+
+		<!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+		<!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+		<!--<script src="../../assets/js/ie-emulation-modes-warning.js"></script>-->
+
+		<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+			<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+	</head>
+
+	<body>
+
+		<nav class="navbar navbar-default navbar-fixed-top">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="#">IconFontSearch</a>
+				</div>
+				<div class="collapse navbar-collapse navbar-right" id="navbar">
+					<div class="navbar-form" role="search">
+						<div class="form-group">
+							<input type="text" class="form-control" placeholder="Search" id="search_keyword">
+						</div>
+						<div class="form-group">
+							<div class="btn-group" data-toggle="buttons">
+								<label class="btn btn-default active">
+									<input type="radio" name="searchmode" id="searchmode_and" value="AND" checked>
+									AND
+								</label>
+								<label class="btn btn-default">
+									<input type="radio" name="searchmode" id="searchmode_or" value="OR">
+									OR
+								</label>
+							</div>
+						</div>
+						<div class="form-group">
+							<button type="" class="btn btn-default" id="get_code">
+								<i class="fa fa-code"></i>
+								Get code
+							</button>
+						</div>
+					</div>
+				</div><!--/.nav-collapse -->
+			</div>
+		</nav>
+
+		<div class="container">
+
+			<div class="starter-template">
+				<div class="row" id="selected-container">
+					<div class="panel panel-default">
+						<div class="panel-body IFS-TAGS">
+
+						</div>
+					</div>
+				</div>
+				<div class="row" id="icon-container">
+				</div>
+			</div>
+
+
+		</div><!-- /.container -->
+
+
+		<!-- Modal -->
+		<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+						<h4 class="modal-title" id="myModalLabel">Modal title</h4>
+					</div>
+					<div class="modal-body">
+						<h5>in Header</h5>
+						<textarea class="form-control" rows="4em" id="header_code"></textarea>
+						<h5>in Content</h5>
+						<textarea class="form-control" rows="8em" id="content_code"></textarea>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+		<!-- Bootstrap core JavaScript
+		================================================== -->
+		<!-- Placed at the end of the document so the pages load faster -->
+		<script src="./script/jquery-2.1.4.min.js"></script>
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="./script/bootstrap.min.js"></script>
+		<!-- IE10 viewport hack for Surface/desktop Windows 8 bug 
+		<script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>-->
+
+
+		<!-- ifs code -->
+		<script language="text/html" id="icon-template-fontawesome">
+			<div class="col-xs-6 col-sm-4 col-md-3 col-lg-2 icon_block IFS-BUTTON" id="{%_id_%}">
+				<button type="button" class="btn btn-block btn-default" title="{%_title_%}">
+					<i class="fa fa-2x {%_name_%}"></i>
+					<span>{%_name_%}</span>
+				</button>
+			</div>
+		</script>
+
+		<script language="text/html" id="tag-template">
+			<span class="IFS-TAG" data="{%_id_%}">
+				<span class="label label-info">
+					<i class="fa {%_name_%}"></i>
+					{%_name_%}
+					<span class="fa-stack IFS-DELETE" title="delete" data="{%_id_%}"> 
+						<i class="fa fa-stack-1x fa-times-circle text-danger"></i>
+						<i class="fa fa-stack-1x fa-times-circle-o"></i>
+					</span>
+				</span>
+			</span>
+		</script>
+
+		<script src="script/ifs-core.js"></script>
+		<script src="script/ifs-ui.js"></script>
+
+
+	</body>
+</html>
+
