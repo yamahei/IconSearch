@@ -1,0 +1,184 @@
+#!/usr/bin/ruby
+# coding: utf-8
+
+require 'date'
+require 'fileutils'
+require 'nokogiri'
+require 'open-uri'
+require 'json'
+require 'yaml'
+
+TMP_DIR = File.expand_path('./tmp', File.dirname(__FILE__))
+ICON_DATA_TMP = File.expand_path('./icon_data.tmp.json', TMP_DIR)
+KEYWORD_SEPARATOR = /[\s\-\/,_]+/
+
+BACKUP_DIR = File.expand_path(DateTime.now.strftime("./public_%Y%m%d%H%M%S"), File.dirname(__FILE__))
+PUBLIC_DIR = File.expand_path('./public', File.dirname(__FILE__))
+CSS_DIR = File.expand_path('./css', PUBLIC_DIR)
+JS_DIR = File.expand_path('./script', PUBLIC_DIR)
+FONT_DIR = File.expand_path('./fonts', PUBLIC_DIR)
+
+
+task :default => :all
+
+desc "do all task"
+task :all => [:init, :services, :finish] do
+end
+
+#---
+# init
+#---
+desc "init"
+task :init => [:backup, :init_data] do
+end
+
+desc "backup public dir"
+task :backup do
+	FileUtils.cp_r(PUBLIC_DIR, BACKUP_DIR) if FileTest.exist?(PUBLIC_DIR)
+end
+
+desc "make data file"
+task :init_data => [:mktmp] do
+	[ICON_DATA_TMP].each do |path|
+		File.open(path,"w") do |file|
+		  file.puts("{}")
+		end
+	end
+end
+
+desc "make or clean tmp dir"
+task :mktmp do
+	FileUtils.rm_rf(TMP_DIR) if FileTest.exist?(TMP_DIR)
+	FileUtils.mkdir_p(TMP_DIR)
+end
+
+
+desc "all font services"
+task :services => [:fontawesome] do
+end
+
+#---
+# fontawesome
+#---
+FA_CATEGORIES_URL = "http://fortawesome.github.io/Font-Awesome/icons"
+FA_CDN_URL = "http://fortawesome.github.io/Font-Awesome/get-started/"
+FA_DOWNLOAD_URL = "https://github.com/FortAwesome/Font-Awesome/archive/master.zip"
+FA_ZIP_FILE = File.expand_path('./fa.zip', TMP_DIR)
+FA_UNZIP_DIR = File.expand_path('./fa', TMP_DIR)
+
+desc "top of fontawesome tasks"
+task :fontawesome => [:fa_set_baseinfo, :fa_get_category, :fa_get_zip] do
+end
+
+desc "write base informartion of the fontawesome to json"
+task :fa_set_baseinfo do
+	json = getJson(ICON_DATA_TMP)
+	json["info"] = [] if !json.has_key?("info")
+	service = "fontawesome"
+	json["info"].push({
+		:provider => service.downcase,
+		:template => '<i class="fa fa-2x {%_name_%}"></i>',
+		:code => '<i class="fa {%_name_%}"></i>',
+		#:cdn => '<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/{%_version_%}/css/font-awesome.min.css">',
+	})
+	setJson(ICON_DATA_TMP, json)
+end
+
+desc "parse to get categories and write to json"
+task :fa_get_category do
+	service = "fontawesome"
+	temp = {}
+	doc = getDocument(FA_CATEGORIES_URL)
+	doc.xpath("//div[@id='icons']/section").each {|section|
+		h2 = section.xpath(".//h2[@class='page-header']")
+		category = h2.xpath("./text()").to_s.gsub(/icons?/, "")
+		path = ".//div[contains(@class,'fontawesome-icon-list')]/div/a/i"
+		i = section.xpath(path).each{|i|
+			if(/(fa\-\w[^\s]*$)/ =~ i.xpath("./@class").to_s) then
+				name = $1
+				temp[name] = [] if !temp.has_key?(name)
+				temp[name].push(category)
+			end
+		}
+	}
+	icons = []
+	temp.keys.each{|name|
+		category = temp[name].uniq.join("/")
+		icons.push({
+			:provider => service.downcase,
+			:category => category.downcase.split(KEYWORD_SEPARATOR),
+			:name => name,
+			:keywords => [service, category, name].join("/").downcase.split(KEYWORD_SEPARATOR),
+		})
+	}
+	json = getJson(ICON_DATA_TMP)
+	json["icons"] = [] if !json.has_key?("icons")
+	json["icons"] = icons
+	setJson(ICON_DATA_TMP, json)
+end
+
+desc "download and extract latest files, and copy css and font"
+task :fa_get_zip do
+	`wget -O #{FA_ZIP_FILE} #{FA_DOWNLOAD_URL}`
+	`unzip -d #{FA_UNZIP_DIR} #{FA_ZIP_FILE}`
+	yaml = YAML.load(`cat #{FA_UNZIP_DIR}/*/_config.yml`)
+	if yaml.has_key?('fontawesome') && yaml['fontawesome'].has_key?('version') then
+		version = yaml['fontawesome']['version']
+		url = "https://maxcdn.bootstrapcdn.com/font-awesome/#{version}/css/font-awesome.min.css"
+		cdn = '<link rel="stylesheet" href="' + url + '">'
+		json = getJson(ICON_DATA_TMP)
+		json["info"] = [] if !json.has_key?("info")
+		json["info"].each{|e|
+			e["cdn"] = cdn if e["provider"] == 'fontawesome'
+		}
+		setJson(ICON_DATA_TMP, json)
+	end
+	`mv #{FA_UNZIP_DIR}/*/css/* #{CSS_DIR}/`
+	`mv #{FA_UNZIP_DIR}/*/fonts/* #{FONT_DIR}/`
+	`rm -f -r -d #{FA_UNZIP_DIR}`
+	`rm -f -r -d #{FA_ZIP_FILE}`
+end
+
+#---
+# finish
+#---
+ICON_DATA = File.expand_path('./icon_data.json', PUBLIC_DIR)
+desc "finish IFS"
+task :finish => [:move_data, :upload] do
+end
+
+desc "move created data"
+task :move_data do
+	`mv #{ICON_DATA_TMP} #{ICON_DATA}` if FileTest.exist?(ICON_DATA_TMP)
+end
+
+desc "upload"
+task :upload do
+	#TODO:
+end
+
+
+#---
+# utility
+#---
+def getDocument(url)
+	charset = nil
+	html = open(url) do |f|
+	  charset = f.charset
+	  f.read
+	end
+	Nokogiri::HTML.parse(html, nil, charset)
+end
+
+def getJson(path)
+	open(path) do |io|
+	  JSON.load(io)
+	end
+end
+
+def setJson(path, obj)
+	open(path, 'w') do |io|
+	  JSON.dump(obj, io)
+	end
+end
+
